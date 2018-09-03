@@ -2,19 +2,38 @@ const worker = new Worker("./worker.ts");
 
 var audioCtx = new AudioContext();
 
+let bufferSource: AudioBufferSourceNode | null = null;
+
 worker.onmessage = e => {
-  const audioBuffer = audioCtx.createBuffer(
-    1,
-    e.data.length,
-    audioCtx.sampleRate
-  );
+  switch (e.data.type) {
+    case "start": {
+      bufferSource = audioCtx.createBufferSource();
 
-  audioBuffer.copyToChannel(e.data, 0, 0);
+      const buffer = e.data.payload;
+      const audioBuffer = audioCtx.createBuffer(
+        1,
+        buffer.length,
+        audioCtx.sampleRate
+      );
 
-  const bufferSource = audioCtx.createBufferSource();
-  bufferSource.buffer = audioBuffer;
-  bufferSource.connect(audioCtx.destination);
-  bufferSource.start();
+      audioBuffer.copyToChannel(buffer, 0, 0);
+
+      bufferSource.buffer = audioBuffer;
+      bufferSource.connect(audioCtx.destination);
+      bufferSource.start();
+
+      break;
+    }
+
+    case "stop": {
+      if (bufferSource !== null) {
+        bufferSource.disconnect(audioCtx.destination);
+        bufferSource.stop();
+      }
+
+      break;
+    }
+  }
 };
 
 navigator.mediaDevices

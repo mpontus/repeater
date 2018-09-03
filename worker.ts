@@ -24,6 +24,8 @@ ctx.onmessage = e => {
     if (loudEnough) {
       recordingStarted = true;
       buffer.fill(0);
+
+      ctx.postMessage({ type: "stop" });
     }
   }
 
@@ -39,7 +41,7 @@ ctx.onmessage = e => {
   if (recordingStarted) {
     if (!loudEnough) {
       recordingStarted = false;
-      ctx.postMessage(buffer);
+      ctx.postMessage({ type: "start", payload: buffer });
       offset = 0;
     }
   }
