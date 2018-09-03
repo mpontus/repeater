@@ -16,7 +16,7 @@ navigator.mediaDevices
   .then((stream: MediaStream) => {
     const source = audioCtx.createMediaStreamSource(stream);
 
-    const scriptProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
+    const scriptProcessor = audioCtx.createScriptProcessor(16384, 1, 1);
 
     scriptProcessor.onaudioprocess = (e: AudioProcessingEvent) => {
       const { inputBuffer } = e;
