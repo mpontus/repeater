@@ -1,0 +1,9 @@
+{
+  "name": "repeater",
+  "version": "1.0.0",
+  "description": "Shadowing practice using WebAudio",
+  "main": "index.js",
+  "repository": "https://github.com/mpontus/repeater",
+  "author": "Mikhail Pontus",
+  "license": "MIT"
+}
