@@ -1,10 +1,21 @@
 const worker = new Worker("./worker.ts");
 
-worker.onmessage = e => {
-  console.log(e.data);
-};
-
 var audioCtx = new AudioContext();
+
+worker.onmessage = e => {
+  const audioBuffer = audioCtx.createBuffer(
+    1,
+    e.data.length,
+    audioCtx.sampleRate
+  );
+
+  audioBuffer.copyToChannel(e.data, 0, 0);
+
+  const bufferSource = audioCtx.createBufferSource();
+  bufferSource.buffer = audioBuffer;
+  bufferSource.connect(audioCtx.destination);
+  bufferSource.start();
+};
 
 navigator.mediaDevices
   .getUserMedia({

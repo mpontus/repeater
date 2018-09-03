@@ -23,6 +23,7 @@ ctx.onmessage = e => {
   if (!recordingStarted) {
     if (loudEnough) {
       recordingStarted = true;
+      buffer.fill(0);
     }
   }
 
