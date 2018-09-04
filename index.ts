@@ -6,7 +6,16 @@ let bufferSource: AudioBufferSourceNode | null = null;
 
 worker.onmessage = e => {
   switch (e.data.type) {
-    case "start": {
+    case "voice_start": {
+      if (bufferSource !== null) {
+        bufferSource.disconnect(audioCtx.destination);
+        bufferSource.stop();
+      }
+
+      break;
+    }
+
+    case "voice_end": {
       bufferSource = audioCtx.createBufferSource();
 
       const buffer = e.data.payload;
@@ -24,15 +33,6 @@ worker.onmessage = e => {
 
       break;
     }
-
-    case "stop": {
-      if (bufferSource !== null) {
-        bufferSource.disconnect(audioCtx.destination);
-        bufferSource.stop();
-      }
-
-      break;
-    }
   }
 };
 
@@ -46,7 +46,7 @@ navigator.mediaDevices
   .then((stream: MediaStream) => {
     const source = audioCtx.createMediaStreamSource(stream);
 
-    const scriptProcessor = audioCtx.createScriptProcessor(16384, 1, 1);
+    const scriptProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
 
     scriptProcessor.onaudioprocess = (e: AudioProcessingEvent) => {
       const { inputBuffer } = e;

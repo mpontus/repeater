@@ -1,35 +1,59 @@
 const ctx: Worker = self as any;
 
-const THRESHOLD = 200;
+// Include 1 second of audio around the point of the beginning of the speech
+const EASING_DURATION = 1;
 
-const lengthInSeconds = 60;
-const sampleRate = 44100;
+interface IVoiceDetector {
+  write(data: Float32Array): void;
 
-const buffer = new Float32Array(lengthInSeconds * sampleRate); // 44100 * seconds
+  isHearingVoice(): boolean;
+}
+
+class AverageAmplitudeVoiceDetector implements IVoiceDetector {
+  private readonly sampleCount: number;
+  private readonly threshold: number;
+
+  private avg: number = 0;
+
+  constructor(threshold: number, sampleCount: number) {
+    this.sampleCount = sampleCount;
+    this.threshold = threshold;
+  }
+
+  write(data: Float32Array) {
+    const sum = data.map(Math.abs).reduce((a, b) => a + b);
+
+    this.avg *= 1 - data.length / this.sampleCount;
+    this.avg += sum / this.sampleCount;
+  }
+
+  isHearingVoice() {
+    console.log(this.avg);
+
+    return this.avg > this.threshold;
+  }
+}
+
+const buffer = new Float32Array(60 * 44100);
+const voiceDetector = new AverageAmplitudeVoiceDetector(0.02, 0.5 * 44100);
 let offset = 0;
-let recordingStarted = false;
-
-const isHearingVoice = (samples: Float32Array) =>
-  samples.reduce((a, b) => a + Math.abs(b), 0) > THRESHOLD;
+let recording = false;
 
 ctx.onmessage = e => {
   const pcm: Float32Array = e.data; // 4096
 
-  // const averageIntensity =
-  //   pcm.map(Math.abs).reduce((acc, val) => acc + val, 0) / pcm.length;
+  voiceDetector.write(pcm);
 
-  const loudEnough = isHearingVoice(pcm);
+  const isHearingVoice = voiceDetector.isHearingVoice();
 
-  if (!recordingStarted) {
-    if (loudEnough) {
-      recordingStarted = true;
-      buffer.fill(0);
+  if (!recording && isHearingVoice) {
+    recording = true;
+    buffer.fill(0);
 
-      ctx.postMessage({ type: "stop" });
-    }
+    ctx.postMessage({ type: "voice_start" });
   }
 
-  if (recordingStarted) {
+  if (recording) {
     if (offset + pcm.length > buffer.length) {
       return;
     }
@@ -38,11 +62,9 @@ ctx.onmessage = e => {
     offset += pcm.length;
   }
 
-  if (recordingStarted) {
-    if (!loudEnough) {
-      recordingStarted = false;
-      ctx.postMessage({ type: "start", payload: buffer });
-      offset = 0;
-    }
+  if (recording && !isHearingVoice) {
+    recording = false;
+    ctx.postMessage({ type: "voice_end", payload: buffer });
+    offset = 0;
   }
 };
