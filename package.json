@@ -6,7 +6,13 @@
   "repository": "https://github.com/mpontus/repeater",
   "author": "Mikhail Pontus",
   "license": "MIT",
+  "scripts": {
+    "start": "parcel index.html",
+    "build": "parcel build index.html --public-url '.'",
+    "deploy": "gh-pages -d dist"
+  },
   "devDependencies": {
+    "gh-pages": "^1.2.0",
     "parcel-bundler": "^1.9.7",
     "typescript": "^3.0.3"
   }
