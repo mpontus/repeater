@@ -38,10 +38,7 @@ worker.onmessage = e => {
 
 navigator.mediaDevices
   .getUserMedia({
-    // TODO: specify number of channels
-
-    audio: true,
-    video: false
+    audio: true
   })
   .then((stream: MediaStream) => {
     const source = audioCtx.createMediaStreamSource(stream);
