@@ -32,8 +32,7 @@ export interface Settings {
   amplitudeThreshold: number;
 
   /**
-   * Duration of the audio to be caputred before the beginning of
-   * speech was detected which generates smoother transition.
+   * Duration of the audio caputred before the beginning of speech
    */
   contextDuration: number;
 }
@@ -70,6 +69,9 @@ type Event =
       data: Float32Array;
     };
 
+/**
+ * Create a stream which emits at
+ */
 const createVoiceDetectorStream = (
   action$: Stream<Action>,
   sampleRate: number,
@@ -98,6 +100,9 @@ const createVoiceDetectorStream = (
     .compose(dropRepeats());
 };
 
+/**
+ * Create a stream which
+ */
 const createSpeechCaptureStream = (
   action$: Stream<Action>,
   sampleRate: number,
@@ -129,9 +134,11 @@ const createSpeechCaptureStream = (
     .flatten();
 };
 
-const createStreamProcessor = (
-  action$: Stream<InputWorkerEvent>
-): Stream<OutputWorkerEvent> => {
+/**
+ * This function handles outside commands, analyzing the audio and
+ * producing a stream of events to drive the UI..
+ */
+const createStreamProcessor = (action$: Stream<Action>): Stream<Event> => {
   return action$
     .filter(ofType("start"))
     .map(action => {
