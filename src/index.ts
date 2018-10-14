@@ -18,6 +18,13 @@ export type Sinks = {
   worker: Stream<InputWorkerEvent>;
 };
 
+/**
+ * Adjust threshold value to fit real scale.
+ *
+ * Exponentiation makes the slider feel more natural.
+ */
+const exponentiateThreshold = (v: number) => v ** 2 * 0.2;
+
 const main = (sources: Sources): Sinks => {
   const volumeChange$ = sources.DOM.select(".volume")
     .events("input")
@@ -48,9 +55,11 @@ const main = (sources: Sources): Sinks => {
     DOM: state$.map(state =>
       div([
         div([
-          `Volume: ${state.volume}, Threshold: ${state.threshold.toFixed(
+          `Volume: ${state.volume.toFixed(
             5
-          )}, Started: ${state.started ? "true" : "false"}`
+          )}, Threshold: ${state.threshold.toFixed(5)}, Started: ${
+            state.started ? "true" : "false"
+          }`
         ]),
 
         div([
@@ -80,6 +89,7 @@ const main = (sources: Sources): Sinks => {
             attrs: {
               type: "checkbox",
               id: "started",
+
               checked: state.started
             }
           }),
@@ -111,11 +121,11 @@ const main = (sources: Sources): Sinks => {
           xs
             .combine(threshold$, silenceDuration$, contextDuration$)
             .take(1)
-            .map(([amplitudeThreshold, silenceDuration, contextDuration]) => ({
+            .map(([threshold, silenceDuration, contextDuration]) => ({
               key: "start",
               data: {
                 sampleRate: sources.audio.sampleRate,
-                amplitudeThreshold,
+                amplitudeThreshold: exponentiateThreshold(threshold),
                 silenceDuration,
                 contextDuration
               }
@@ -123,10 +133,10 @@ const main = (sources: Sources): Sinks => {
         )
         .flatten(),
       startedChange$.filter(is(false)).mapTo({ key: "stop" }),
-      thresholdChange$.map(amplitudeThreshold => ({
+      thresholdChange$.map(threshold => ({
         key: "update_settings",
         data: {
-          amplitudeThreshold
+          amplitudeThreshold: exponentiateThreshold(threshold)
         }
       })),
       sources.audio.samples.map(data => ({ key: "process", data }))
