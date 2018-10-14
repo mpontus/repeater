@@ -32,5 +32,10 @@
       "json",
       "node"
     ]
+  },
+  "dependencies": {
+    "@cycle/dom": "^21.1.0",
+    "@cycle/run": "^4.4.0",
+    "xstream": "^11.7.0"
   }
 }

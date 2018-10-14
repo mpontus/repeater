@@ -6,7 +6,7 @@ export interface IVoiceDetector {
 
 export class AverageAmplitudeVoiceDetector implements IVoiceDetector {
   private readonly sampleCount: number;
-  private readonly threshold: number;
+  private threshold: number;
 
   private avg: number = 0;
 
@@ -20,10 +20,23 @@ export class AverageAmplitudeVoiceDetector implements IVoiceDetector {
 
     this.avg *= 1 - data.length / this.sampleCount;
     this.avg += sum / this.sampleCount;
+
+    const maxAbs = data.map(Math.abs).reduce(Math.abs);
+
+    console.log(
+      [this.avg, this.threshold]
+        .map<any>(v => v.toFixed(5))
+        .concat(this.avg > this.threshold)
+        .concat(maxAbs.toFixed(5))
+    );
   }
 
   isHearingVoice() {
     return this.avg > this.threshold;
+  }
+
+  setThreshold(value: number) {
+    this.threshold = value;
   }
 }
 
