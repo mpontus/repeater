@@ -105,6 +105,13 @@
     snabbdom-selector "^3.0.0"
     xstream "11.x"
 
+"@cycle/isolate@^3.4.0":
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/@cycle/isolate/-/isolate-3.4.0.tgz#df693726c9593e5d903309da7dc5692d57720489"
+  dependencies:
+    "@cycle/run" "^4.4.0"
+    xstream "^11.7.0"
+
 "@cycle/run@4.4.0", "@cycle/run@^4.4.0":
   version "4.4.0"
   resolved "https://registry.yarnpkg.com/@cycle/run/-/run-4.4.0.tgz#8013702548b1992f665b9f2f42882996871ccf8f"
