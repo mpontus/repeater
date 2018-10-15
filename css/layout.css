@@ -6,8 +6,14 @@
 
 main {
   display: flex;
+  align-items: center;
   flex-direction: column;
   min-height: 100%;
+  max-width: 100%;
+}
+
+main > header, section, footer {
+  width: 100%;
 }
 
 main > header {
@@ -39,36 +45,12 @@ main > footer {
 }
 
 @media (min-width: 1024px) {
-  main {
-    justify-content: center;
+  main > header, main > footer, main > section {
+    max-width: 768px;
   }
 
-  header {
-    position: absolute;
-    left: 50%;
-    width: 24rem;
-    top: 0;
-    margin-left: -12rem;
-  }
-
-  footer {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-  }
-
-  section {
-    width: 24rem;
-    margin: 0 auto;
-  }
-
-  section.toggle-button {
-    flex: 0;
-    padding: 4rem;
-  }
-
-  section.toggle-button {
-    flex: 0;
+  main > section.volume-slider, main > section.threshold-slider {
+    max-width: 448px;
   }
 }
 
