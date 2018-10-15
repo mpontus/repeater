@@ -1,0 +1,44 @@
+html {
+  --slider-height: 2rem;
+  --slider-margin: 1rem 0;
+
+  --slider-track-height: 1rem;
+  --slider-track-radius: 0.2rem;
+  --slider-track-background: rgba(0, 0, 0, 0.12);
+  --slider-track-border: none;
+  --slider-track-shadow: none;
+
+  --slider-thumb-size: 2rem;
+  --slider-thumb-radius: 50%;
+  --slider-thumb-background: white linear-gradient(transparent, rgba(0, 0, 0, 0.04));
+  --slider-thumb-border: none;
+  --slider-thumb-shadow: 0 0 2px rgba(0,0,0,.12), 0 0 0 1px rgba(0, 0, 0, .16) inset;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: var(--slider-height);
+  margin: var(--slider-margin);
+}
+
+input[type=range]::range-track {
+  cursor: pointer;
+  height: var(--slider-track-height);
+  border: var(--slider-track-border);
+  border-radius: var(--slider-track-radius);
+  background: var(--slider-track-background);
+  box-shadow: var(--slider-track-shadow);
+}
+
+input[type=range]::range-thumb {
+  -webkit-appearance: none;
+  cursor: pointer;
+  height: var(--slider-thumb-size);
+  width: var(--slider-thumb-size);
+  border: var(--slider-thumb-border);
+  border-radius: var(--slider-thumb-radius);
+  background: var(--slider-thumb-background);
+  box-shadow: var(--slider-thumb-shadow);
+  margin-top: calc((var(--slider-track-height) - var(--slider-thumb-size)) / 2);
+}
