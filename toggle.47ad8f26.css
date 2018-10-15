@@ -1,0 +1,38 @@
+.toggle-button {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+
+.toggle-button input {
+  display: none;
+}
+
+.toggle-button .caption {
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: white linear-gradient(transparent, rgba(0, 0, 0, 0.12));
+  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.12) inset;
+}
+
+.toggle-button svg {
+  fill: rgba(0, 0, 0, 0.24);
+  width: 48px;
+  height: 48px;
+  transition: fill 0.2s ease;
+}
+
+.toggle-button input:active + .caption {
+  opacity: 0.8;
+}
+
+.toggle-button input:checked + .caption svg {
+  fill: #f44336;
+}
+

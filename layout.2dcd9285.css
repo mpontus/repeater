@@ -1,0 +1,50 @@
+main {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  min-height: 100%;
+  max-width: 100%;
+}
+
+main > header, section, footer {
+  width: 100%;
+}
+
+main > header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2.4rem;
+  height: 4rem;
+  padding: 0 1rem;
+}
+
+main > section {
+  padding: 0 1rem;
+  margin-bottom: 2.4rem;
+}
+
+section.toggle-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+main > footer {
+  justify-self: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 4rem;
+}
+
+@media (min-width: 1024px) {
+  main > header, main > footer, main > section {
+    max-width: 768px;
+  }
+
+  main > section.volume-slider, main > section.threshold-slider {
+    max-width: 448px;
+  }
+}
+

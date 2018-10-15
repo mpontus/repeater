@@ -1,0 +1,29 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'Roboto', sans-serif;
+}
+
+html, body, #main {
+  height: 100%;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, .88);
+  flex: 1;
+}
+
+.social-link svg {
+  margin: 0 0.5rem;
+  vertical-align: text-top;
+  fill: rgba(0, 0, 0, 0.54);
+}
+
+.social-link span {
+  color: rgba(0, 0, 0, 0.54);
+}

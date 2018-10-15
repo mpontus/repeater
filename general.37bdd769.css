@@ -1,0 +1,57 @@
+/* tamil */
+@font-face {
+  font-family: 'Pavanam';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Pavanam'), local('Pavanam-Regular'), url(https://fonts.gstatic.com/s/pavanam/v2/BXRrvF_aiezLh0xPPPpa9EX3UcDv1A.woff2) format('woff2');
+  unicode-range: U+0964-0965, U+0B82-0BFA, U+200C-200D, U+20B9, U+25CC;
+  font-display: swap;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Pavanam';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Pavanam'), local('Pavanam-Regular'), url(https://fonts.gstatic.com/s/pavanam/v2/BXRrvF_aiezLh0xPPOJa9EX3UcDv1A.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  font-display: swap;
+}
+/* latin */
+@font-face {
+  font-family: 'Pavanam';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Pavanam'), local('Pavanam-Regular'), url(https://fonts.gstatic.com/s/pavanam/v2/BXRrvF_aiezLh0xPPOxa9EX3UcA.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'Pavanam', sans-serif;
+}
+
+html, body, #main {
+  height: 100%;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, .88);
+  flex: 1;
+}
+
+.social-link svg {
+  margin: 0 0.5rem;
+  vertical-align: text-top;
+  fill: rgba(0, 0, 0, 0.54);
+}
+
+.social-link span {
+  color: rgba(0, 0, 0, 0.54);
+}
