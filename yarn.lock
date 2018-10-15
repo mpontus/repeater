@@ -112,12 +112,16 @@
     "@cycle/run" "^4.4.0"
     xstream "^11.7.0"
 
-"@cycle/run@4.4.0", "@cycle/run@^4.4.0":
+"@cycle/run@*", "@cycle/run@4.4.0", "@cycle/run@^4.4.0":
   version "4.4.0"
   resolved "https://registry.yarnpkg.com/@cycle/run/-/run-4.4.0.tgz#8013702548b1992f665b9f2f42882996871ccf8f"
   dependencies:
     quicktask "1.1.0"
     xstream "10.x || 11.x"
+
+"@cycle/storage@^5.0.3":
+  version "5.0.3"
+  resolved "https://registry.yarnpkg.com/@cycle/storage/-/storage-5.0.3.tgz#9484e9f0b6c44abf5395c9ca5b008d3626e6b64f"
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
@@ -6008,7 +6012,7 @@ xml-name-validator@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/xml-name-validator/-/xml-name-validator-3.0.0.tgz#6ae73e06de4d8c6e47f9fb181f78d648ad457c6a"
 
-"xstream@10.x || 11.x", xstream@11.x, xstream@^11.7.0:
+xstream@*, "xstream@10.x || 11.x", xstream@11.x, xstream@^11.7.0:
   version "11.7.0"
   resolved "https://registry.yarnpkg.com/xstream/-/xstream-11.7.0.tgz#6557e9710e1ab05ae28b6902af41745250d32e36"
   dependencies:

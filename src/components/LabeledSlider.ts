@@ -1,6 +1,5 @@
 import xs, { Stream } from "xstream";
 import { div, span, input, DOMSource, VNode } from "@cycle/dom";
-import isolate, { Component } from "@cycle/isolate";
 
 export type Value = number;
 
@@ -45,15 +44,13 @@ function view(props$: Stream<Props>, value$: Stream<Value>) {
   );
 }
 
-export const LabeledSlider: Component<Sources, Sinks> = isolate(
-  (sources: Sources): Sinks => {
-    const change$ = intent(sources.DOM);
-    const value$ = model(change$, sources.props$);
-    const vdom$ = view(sources.props$, value$);
-    return {
-      DOM: vdom$,
-      value: value$,
-      changes: change$
-    };
-  }
-);
+export const LabeledSlider = (sources: Sources): Sinks => {
+  const change$ = intent(sources.DOM);
+  const value$ = model(change$, sources.props$);
+  const vdom$ = view(sources.props$, value$);
+  return {
+    DOM: vdom$,
+    value: value$,
+    changes: change$
+  };
+};

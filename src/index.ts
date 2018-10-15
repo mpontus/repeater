@@ -1,5 +1,10 @@
 import { run } from "@cycle/run";
 import { div, input, label, makeDOMDriver, VNode, DOMSource } from "@cycle/dom";
+import storageDriver, {
+  StorageRequest,
+  ResponseCollection
+} from "@cycle/storage";
+import isolate, { Component } from "@cycle/isolate";
 import xs, { Stream } from "xstream";
 import { makeWorkerDriver } from "./drivers/worker";
 import { makeAudioDriver, AudioSource, AudioSink } from "./drivers/audio";
@@ -10,12 +15,14 @@ import { ToggleButton } from "./components/ToggleButton";
 
 export type Sources = {
   DOM: DOMSource;
+  storage: ResponseCollection;
   audio: AudioSource;
   worker: Stream<OutputWorkerEvent>;
 };
 
 export type Sinks = {
   DOM: Stream<VNode>;
+  storage: Stream<StorageRequest>;
   audio: AudioSink;
   worker: Stream<InputWorkerEvent>;
 };
@@ -28,34 +35,51 @@ export type Sinks = {
 const exponentiateThreshold = (v: number) => v ** 2 * 0.2;
 
 const main = (sources: Sources): Sinks => {
-  const volumeSliderProps$ = xs.of({
-    label: "Feedback Volume",
-    min: 0,
-    max: 100,
-    initial: 50
-  });
-  const thresholdSliderProps$ = xs.of({
-    label: "Amplitude Threshold",
-    min: 0,
-    max: 100,
-    initial: 15
-  });
-  const toggleButtonProps = xs.of({
-    label: "Recording",
-    initial: true
-  });
+  const VolumeSlider = isolate(LabeledSlider) as typeof LabeledSlider;
+  const ThresholdSlider = isolate(LabeledSlider) as typeof LabeledSlider;
 
-  const volumeSlider = LabeledSlider({
+  const volumeSliderProps$ = sources.storage.local
+    .getItem<string>("volume")
+    .take(1)
+    .map(value => (value ? parseInt(value, 10) : 50))
+    .map(value => ({
+      label: "Feedback Volume",
+      min: 0,
+      max: 100,
+      initial: value
+    }));
+
+  const thresholdSliderProps$ = sources.storage.local
+    .getItem<string>("threshold")
+    .take(1)
+    .map(value => (value ? parseInt(value, 10) : 15))
+    .map(value => ({
+      label: "Amplitude Threshold",
+      min: 0,
+      max: 100,
+      initial: value
+    }));
+
+  const toggleButtonProps$ = sources.storage.local
+    .getItem<string>("started")
+    .take(1)
+    .map(value => value === "true")
+    .map(value => ({
+      label: "Recording",
+      initial: value
+    }));
+
+  const volumeSlider = VolumeSlider({
     DOM: sources.DOM,
     props$: volumeSliderProps$
   });
-  const thresholdSlider = LabeledSlider({
+  const thresholdSlider = ThresholdSlider({
     DOM: sources.DOM,
     props$: thresholdSliderProps$
   });
   const toggleButton = ToggleButton({
     DOM: sources.DOM,
-    props$: toggleButtonProps
+    props$: toggleButtonProps$
   });
 
   const volume$ = volumeSlider.value;
@@ -73,7 +97,7 @@ const main = (sources: Sources): Sinks => {
       div([volumeSliderDOM, thresholdSliderDOM, toggleButtonDOM])
     );
 
-  const audioSink$ = xs.merge(
+  const audioSink = xs.merge(
     started$.filter(is(true)).mapTo({ key: "start_recording" }),
     startedChange$.filter(is(false)).mapTo({ key: "stop_recording" }),
     volume$.map(value => ({ key: "set_volume", data: value / 100 })),
@@ -84,7 +108,7 @@ const main = (sources: Sources): Sinks => {
     }))
   ) as AudioSink;
 
-  const workerSink$: Stream<InputWorkerEvent> = xs.merge(
+  const workerSink: Stream<InputWorkerEvent> = xs.merge(
     started$
       .filter(is(true))
       // Nested stream is necessary in order to pass threshold with
@@ -115,15 +139,32 @@ const main = (sources: Sources): Sinks => {
     }))
   );
 
+  const storageSink = xs.merge(
+    volume$.map(value => ({
+      key: "volume",
+      value
+    })),
+    threshold$.map(value => ({
+      key: "threshold",
+      value
+    })),
+    started$.map(value => ({
+      key: "started",
+      value
+    }))
+  );
+
   return {
     DOM: vdom$,
-    audio: audioSink$,
-    worker: workerSink$
+    audio: audioSink,
+    worker: workerSink,
+    storage: storageSink
   };
 };
 
 run(main, {
   DOM: makeDOMDriver("#main"),
+  storage: storageDriver,
   audio: makeAudioDriver(new AudioContext()),
   worker: makeWorkerDriver<InputWorkerEvent, OutputWorkerEvent>(
     new Worker("./worker.ts")

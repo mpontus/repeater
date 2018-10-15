@@ -1,6 +1,5 @@
 import xs, { Stream } from "xstream";
 import { div, label, span, input, DOMSource, VNode } from "@cycle/dom";
-import isolate, { Component } from "@cycle/isolate";
 
 export type Value = boolean;
 
@@ -48,15 +47,13 @@ function view(props$: Stream<Props>, value$: Stream<Value>) {
   );
 }
 
-export const ToggleButton: Component<Sources, Sinks> = isolate(
-  (sources: Sources): Sinks => {
-    const change$ = intent(sources.DOM);
-    const value$ = model(change$, sources.props$);
-    const vdom$ = view(sources.props$, value$);
-    return {
-      DOM: vdom$,
-      checked: value$,
-      changes: change$
-    };
-  }
-);
+export const ToggleButton = (sources: Sources): Sinks => {
+  const change$ = intent(sources.DOM);
+  const value$ = model(change$, sources.props$);
+  const vdom$ = view(sources.props$, value$);
+  return {
+    DOM: vdom$,
+    checked: value$,
+    changes: change$
+  };
+};
