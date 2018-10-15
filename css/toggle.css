@@ -1,4 +1,4 @@
-.toggle-button label {
+.toggle-button {
   user-select: none;
 }
 
@@ -6,7 +6,7 @@
   display: none;
 }
 
-.toggle-button label {
+.toggle-button .caption {
   transition: opacity 0.2s;
   display: flex;
   align-items: center;
@@ -25,11 +25,11 @@
   transition: fill 0.2s ease;
 }
 
-.toggle-button input:active + label {
+.toggle-button input:active + .caption {
   opacity: 0.8;
 }
 
-.toggle-button input:checked + label svg {
+.toggle-button input:checked + .caption svg {
   fill: #f44336;
 }
 

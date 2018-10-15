@@ -33,16 +33,21 @@ function model(newValue$: Stream<Value>, props$: Stream<Props>): Stream<Value> {
 
 function view(props$: Stream<Props>, value$: Stream<Value>) {
   return xs.combine(props$, value$).map(([props, value]) =>
-    div(".toggle-button", [
-      label([
-        input(".checkbox", {
+    label(".toggle-button", [
+      input(".checkbox", {
+        attrs: {
+          type: "checkbox",
+          checked: value
+        }
+      }),
+      div(
+        {
           attrs: {
-            type: "checkbox",
-            checked: value
+            class: ["caption"]
           }
-        }),
-        span([props.label])
-      ])
+        },
+        props.label
+      )
     ])
   );
 }
