@@ -1,0 +1,17 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'Roboto', sans-serif;
+}
+
+html, body, #main {
+  height: 100%;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+

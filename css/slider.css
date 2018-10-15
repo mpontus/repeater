@@ -1,6 +1,6 @@
 html {
   --slider-height: 2rem;
-  --slider-margin: 1rem 0;
+  --slider-margin: 0.5rem 0;
 
   --slider-track-height: 1rem;
   --slider-track-radius: 0.2rem;
@@ -8,7 +8,7 @@ html {
   --slider-track-border: none;
   --slider-track-shadow: none;
 
-  --slider-thumb-size: 2rem;
+  --slider-thumb-size: 1.4rem;
   --slider-thumb-radius: 50%;
   --slider-thumb-background: white linear-gradient(transparent, rgba(0, 0, 0, 0.04));
   --slider-thumb-border: none;
