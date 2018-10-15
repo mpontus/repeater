@@ -13,5 +13,16 @@ html, body, #main {
 h1 {
   margin: 0;
   font-size: 1.8rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, .88);
 }
 
+a > svg {
+  margin: 0 0.5rem;
+  vertical-align: text-top;
+  fill: rgba(0, 0, 0, 0.54);
+}
+
+a > span {
+  color: rgba(0, 0, 0, 0.54);
+}
