@@ -5,7 +5,7 @@ export type Value = boolean;
 
 export interface Props {
   initial: Value;
-  label: string;
+  label: any;
 }
 
 export interface Sources {

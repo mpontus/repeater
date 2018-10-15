@@ -2108,7 +2108,7 @@ extend-shallow@^3.0.0, extend-shallow@^3.0.2:
     assign-symbols "^1.0.0"
     is-extendable "^1.0.1"
 
-extend@^3.0.1, extend@~3.0.2:
+extend@^3.0.0, extend@^3.0.1, extend@~3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/extend/-/extend-3.0.2.tgz#f8b1136b4071fbd8eb140aff858b1019ec2915fa"
 
@@ -5327,6 +5327,12 @@ sisteransi@^0.1.1:
 slash@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/slash/-/slash-1.0.0.tgz#c41f2f6c39fc16d1cd17ad4b5d896114ae470d55"
+
+snabbdom-pragma@^2.7.0:
+  version "2.7.0"
+  resolved "https://registry.yarnpkg.com/snabbdom-pragma/-/snabbdom-pragma-2.7.0.tgz#e245014c40e123d1a13a40a6b4a1a8914626b65b"
+  dependencies:
+    extend "^3.0.0"
 
 snabbdom-selector@^3.0.0:
   version "3.1.0"

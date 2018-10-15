@@ -42,6 +42,7 @@
     "autoprefixer": "^9.2.0",
     "postcss": "^7.0.5",
     "postcss-input-range": "^4.0.0",
+    "snabbdom-pragma": "^2.7.0",
     "xstream": "*"
   }
 }
