@@ -257,7 +257,7 @@ const main = (sources: Sources): Sinks => {
 };
 
 run(main, {
-  DOM: makeDOMDriver("#main"),
+  DOM: makeDOMDriver("#root"),
   storage: storageDriver,
   audio: makeAudioDriver(new AudioContext()),
   worker: makeWorkerDriver<InputWorkerEvent, OutputWorkerEvent>(

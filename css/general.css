@@ -34,7 +34,7 @@ html {
   font-family: 'Pavanam', sans-serif;
 }
 
-html, body, #main {
+html, body, #root {
   height: 100%;
 }
 
