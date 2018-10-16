@@ -6865,7 +6865,7 @@ function toIsolated(scope) {
     };
 }
 //# sourceMappingURL=index.js.map
-},{"xstream":"node_modules/xstream/index.js","@cycle/run/lib/adapt":"node_modules/@cycle/run/lib/adapt.js"}],"src/drivers/worker.ts":[function(require,module,exports) {
+},{"xstream":"node_modules/xstream/index.js","@cycle/run/lib/adapt":"node_modules/@cycle/run/lib/adapt.js"}],"src/drivers/workerDriver.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -6898,7 +6898,7 @@ var makeWorkerDriver = exports.makeWorkerDriver = function makeWorkerDriver(work
         });
     };
 };
-},{"xstream":"node_modules/xstream/index.js"}],"src/drivers/audio.ts":[function(require,module,exports) {
+},{"xstream":"node_modules/xstream/index.js"}],"src/drivers/audioDriver.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7177,9 +7177,9 @@ var _xstream = require("xstream");
 
 var _xstream2 = _interopRequireDefault(_xstream);
 
-var _worker = require("./drivers/worker");
+var _workerDriver = require("./drivers/workerDriver");
 
-var _audio = require("./drivers/audio");
+var _audioDriver = require("./drivers/audioDriver");
 
 var _utils = require("./utils");
 
@@ -7320,12 +7320,12 @@ var main = function main(sources) {
     };
 };
 (0, _run.run)(main, {
-    DOM: (0, _dom.makeDOMDriver)("#main"),
+    DOM: (0, _dom.makeDOMDriver)("#root"),
     storage: _storage2.default,
-    audio: (0, _audio.makeAudioDriver)(new AudioContext()),
-    worker: (0, _worker.makeWorkerDriver)(new Worker("/worker.a46dec20.js"))
+    audio: (0, _audioDriver.makeAudioDriver)(new AudioContext()),
+    worker: (0, _workerDriver.makeWorkerDriver)(new Worker("/worker.346a5f7a.js"))
 });
-},{"@cycle/run":"node_modules/@cycle/run/lib/es6/index.js","@cycle/dom":"node_modules/@cycle/dom/lib/es6/index.js","snabbdom-pragma":"node_modules/snabbdom-pragma/dist/index.es6.js","@cycle/storage":"node_modules/@cycle/storage/lib/index.js","@cycle/isolate":"node_modules/@cycle/isolate/lib/es6/index.js","xstream":"node_modules/xstream/index.js","./drivers/worker":"src/drivers/worker.ts","./drivers/audio":"src/drivers/audio.ts","./utils":"src/utils.ts","./components/LabeledSlider":"src/components/LabeledSlider.ts","./components/ToggleButton":"src/components/ToggleButton.ts","./worker.ts":[["worker.a46dec20.js","src/worker.ts"],"worker.a46dec20.map","src/worker.ts"]}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"@cycle/run":"node_modules/@cycle/run/lib/es6/index.js","@cycle/dom":"node_modules/@cycle/dom/lib/es6/index.js","snabbdom-pragma":"node_modules/snabbdom-pragma/dist/index.es6.js","@cycle/storage":"node_modules/@cycle/storage/lib/index.js","@cycle/isolate":"node_modules/@cycle/isolate/lib/es6/index.js","xstream":"node_modules/xstream/index.js","./drivers/workerDriver":"src/drivers/workerDriver.ts","./drivers/audioDriver":"src/drivers/audioDriver.ts","./utils":"src/utils.ts","./components/LabeledSlider":"src/components/LabeledSlider.ts","./components/ToggleButton":"src/components/ToggleButton.ts","./worker/index.ts":[["worker.346a5f7a.js","src/worker/index.ts"],"worker.346a5f7a.map","src/worker/index.ts"]}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 
@@ -7354,7 +7354,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = '' || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + '46255' + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + '43613' + '/');
   ws.onmessage = function (event) {
     var data = JSON.parse(event.data);
 
