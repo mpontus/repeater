@@ -15,8 +15,8 @@ import storageDriver, {
 } from "@cycle/storage";
 import isolate, { Component } from "@cycle/isolate";
 import xs, { Stream } from "xstream";
-import { makeWorkerDriver } from "./drivers/worker";
-import { makeAudioDriver, AudioSource, AudioSink } from "./drivers/audio";
+import { makeWorkerDriver } from "./drivers/workerDriver";
+import { makeAudioDriver, AudioSource, AudioSink } from "./drivers/audioDriver";
 import { InputWorkerEvent, OutputWorkerEvent } from "./worker";
 import { is, ofType } from "./utils";
 import { LabeledSlider } from "./components/LabeledSlider";
@@ -261,6 +261,6 @@ run(main, {
   storage: storageDriver,
   audio: makeAudioDriver(new AudioContext()),
   worker: makeWorkerDriver<InputWorkerEvent, OutputWorkerEvent>(
-    new Worker("./worker.ts")
+    new Worker("./worker/index.ts")
   )
 });

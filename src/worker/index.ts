@@ -1,8 +1,8 @@
 import xs, { Stream } from "xstream";
 import dropRepeats from "xstream/extra/dropRepeats";
-import RoundRobin from "./RoundRobin";
+import CircularBuffer from "./CircularBuffer";
 import VoiceDetector from "./VoiceDetector";
-import { ofType, is } from "./utils";
+import { ofType, is } from "../utils";
 
 /**
  * Size of the buffer allocated for storage of the recorded speech
@@ -109,7 +109,7 @@ const createSpeechCaptureStream = (
   contextDuration: number,
   isHearingVoice$: Stream<boolean>
 ): Stream<Float32Array> => {
-  const buffer = new RoundRobin(BUFFER_SIZE);
+  const buffer = new CircularBuffer(BUFFER_SIZE);
 
   action$.filter(ofType("process")).subscribe({
     next: action => buffer.write(action.data)

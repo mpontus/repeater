@@ -1,10 +1,10 @@
-export interface IRoundRobin {
+export interface ICircularBuffer {
   write(data: Float32Array): void;
 
   readLast(length: number): Float32Array;
 }
 
-export class RoundRobin implements IRoundRobin {
+export class CircularBuffer implements ICircularBuffer {
   private readonly buffer: Float32Array;
   private offset: number = 0;
 
@@ -45,4 +45,4 @@ export class RoundRobin implements IRoundRobin {
   }
 }
 
-export default RoundRobin;
+export default CircularBuffer;
