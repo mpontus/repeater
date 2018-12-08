@@ -2081,7 +2081,6 @@ var AverageAmplitudeVoiceDetector = /** @class */function () {
         this.avg += sum / this.sampleCount;
     };
     AverageAmplitudeVoiceDetector.prototype.isHearingVoice = function () {
-        console.log(this.avg, this.threshold);
         return this.avg > this.threshold;
     };
     AverageAmplitudeVoiceDetector.prototype.setThreshold = function (value) {
