@@ -1,5 +1,6 @@
 import { Driver } from "@cycle/run";
 import xs, { Stream } from "xstream";
+import { ofType } from "../utils";
 
 export type AudioSink = Stream<
   | {
@@ -22,10 +23,10 @@ export type AudioSink = Stream<
 >;
 
 export interface AudioSource {
-  sampleRate: number;
+  sampleRate: Stream<number>;
   samples: Stream<Float32Array>;
-  sourceAnalyser: AnalyserNode;
-  outputAnalyser: AnalyserNode;
+  sourceAnalyser: Stream<AnalyserNode>;
+  outputAnalyser: Stream<AnalyserNode>;
 }
 
 interface UserMediaSource {
@@ -101,7 +102,7 @@ function createUserMediaSource(audioCtx: AudioContext): UserMediaSource {
         };
       },
       stop: () => {
-        scriptProcessorNode.onaudioprocess = null;
+        scriptProcessorNode.onaudioprocess = () => {};
       }
     }),
     analyser: analyserNode
@@ -143,13 +144,27 @@ function createPlaybackSource(audioCtx: AudioContext): PlaybackSource {
 }
 
 export const makeAudioDriver = (
-  audioCtx: AudioContext
+  createAudioContext: () => AudioContext
 ): Driver<AudioSink, AudioSource> => action$ => {
-  const mediaSource = createUserMediaSource(audioCtx);
-  const playbackSource = createPlaybackSource(audioCtx);
+  const audioCtx$ = action$
+    .filter(ofType("start_recording"))
+    .map(createAudioContext);
+  const mediaSource$ = audioCtx$.map(createUserMediaSource);
+  const playbackSource$ = audioCtx$.map(createPlaybackSource);
+  const source$ = xs.combine(mediaSource$, playbackSource$);
 
-  action$.subscribe({
-    next: action => {
+  const volume$ = action$
+    .filter(ofType("set_volume"))
+    .map(action => action.data);
+
+  xs.combine(playbackSource$, volume$).subscribe({
+    next: ([playbackSource, volume]) => {
+      playbackSource.setVolume(volume);
+    }
+  });
+
+  xs.combine(action$, source$).subscribe({
+    next: ([action, [mediaSource, playbackSource]]) => {
       switch (action.key) {
         case "start_recording":
           mediaSource.start();
@@ -158,10 +173,6 @@ export const makeAudioDriver = (
         case "stop_recording":
           mediaSource.stop();
           playbackSource.stop();
-          break;
-
-        case "set_volume":
-          playbackSource.setVolume(action.data);
           break;
 
         case "start_playing":
@@ -173,17 +184,15 @@ export const makeAudioDriver = (
           break;
       }
     },
-    error: console.error,
-    complete: () => {
-      mediaSource.stop();
-      playbackSource.stop();
-    }
+    error: console.error
   });
 
   return {
-    sampleRate: audioCtx.sampleRate,
-    samples: mediaSource.samples,
-    sourceAnalyser: mediaSource.analyser,
-    outputAnalyser: playbackSource.analyser
+    sampleRate: audioCtx$.map(audioCtx => audioCtx.sampleRate),
+    samples: mediaSource$.map(mediaSource => mediaSource.samples).flatten(),
+    sourceAnalyser: mediaSource$.map(mediaSource => mediaSource.analyser),
+    outputAnalyser: playbackSource$.map(
+      playbackSource => playbackSource.analyser
+    )
   };
 };

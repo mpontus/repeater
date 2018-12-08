@@ -15,7 +15,7 @@ export const makeWorkerDriver = <I, O>(
       };
     },
     stop: () => {
-      worker.onmessage = null;
+      worker.onmessage = () => {};
     }
   });
 };
