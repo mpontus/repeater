@@ -29,17 +29,22 @@ function intent(domSource: DOMSource): Stream<Value> {
 }
 
 function model(newValue$: Stream<Value>, props$: Stream<Props>): Stream<Value> {
-  const initialValue$ = props$.map(props => props.initial).take(1);
+  const initialValue$ = props$.map((props) => props.initial).take(1);
   return xs.merge(initialValue$, newValue$).remember();
 }
 
-function view(props$: Stream<Props>, value$: Stream<Value>) {
+function view(props$: Stream<Props>, valueChange$: Stream<Value>) {
+  const value$ = xs.merge(
+    props$.map((props) => props.initial),
+    valueChange$
+  );
+
   return xs.combine(props$, value$).map(([props, value]) =>
     div(".labeled-slider", [
       span(".label", props.label),
       input(".slider", {
-        attrs: { type: "range", min: props.min, max: props.max, value }
-      })
+        attrs: { type: "range", min: props.min, max: props.max, value },
+      }),
     ])
   );
 }
@@ -51,6 +56,6 @@ export const LabeledSlider = (sources: Sources): Sinks => {
   return {
     DOM: vdom$,
     value: value$,
-    changes: change$
+    changes: change$,
   };
 };

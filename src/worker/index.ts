@@ -2,7 +2,8 @@ import xs, { Stream } from "xstream";
 import dropRepeats from "xstream/extra/dropRepeats";
 import CircularBuffer from "./CircularBuffer";
 import VoiceDetector from "./VoiceDetector";
-import { ofType, is } from "../utils";
+import { ofType, is, isDefined } from "../utils";
+import { AverageAmplitude } from "./AverageAmplitude";
 
 /**
  * Size of the buffer allocated for storage of the recorded speech
@@ -62,6 +63,10 @@ type Action =
  */
 type Event =
   | {
+      key: "average_amplitude";
+      data: number;
+    }
+  | {
       key: "voice_start";
     }
   | {
@@ -70,34 +75,44 @@ type Event =
     };
 
 /**
- * Create a stream which emits at
+ * Create a stream which emits average sound amplitude
  */
-const createVoiceDetectorStream = (
+const createAverageAmplitudeStream = (
   action$: Stream<Action>,
   sampleRate: number,
-  silenceDuration: number,
-  amplitudeThreshold: number
-): Stream<boolean> => {
-  const voiceDetector = new VoiceDetector(
-    amplitudeThreshold,
-    silenceDuration * sampleRate
-  );
+  silenceDuration: number
+): Stream<number> => {
+  const averageAmplitude = new AverageAmplitude(silenceDuration * sampleRate);
 
   action$.filter(ofType("process")).subscribe({
-    next: action => voiceDetector.write(action.data)
-  });
-
-  action$.filter(ofType("update_settings")).subscribe({
-    next: action => {
-      if (action.data.amplitudeThreshold) {
-        voiceDetector.setThreshold(action.data.amplitudeThreshold);
-      }
-    }
+    next: (action) => averageAmplitude.write(action.data),
   });
 
   return action$
-    .map(() => voiceDetector.isHearingVoice())
-    .compose(dropRepeats());
+    .filter(ofType("process"))
+    .map(() => averageAmplitude.getAverageAmplitude());
+};
+
+/**
+ * Create a stream which emits a boolean indicating whether the amplitude exceeds threshold
+ */
+const createVoiceDetectorStream = (
+  action$: Stream<Action>,
+  averageAmplitude$: Stream<number>,
+  amplitudeThreshold: number
+): Stream<boolean> => {
+  return action$
+    .filter(ofType("update_settings"))
+    .map((action) => action.data.amplitudeThreshold)
+    .filter(isDefined)
+    .debug()
+    .startWith(amplitudeThreshold)
+    .map((amplitudeThreshold) => {
+      return averageAmplitude$
+        .map((amplitude) => amplitude > amplitudeThreshold)
+        .compose(dropRepeats());
+    })
+    .flatten();
 };
 
 /**
@@ -112,7 +127,7 @@ const createSpeechCaptureStream = (
   const buffer = new CircularBuffer(BUFFER_SIZE);
 
   action$.filter(ofType("process")).subscribe({
-    next: action => buffer.write(action.data)
+    next: (action) => buffer.write(action.data),
   });
 
   return isHearingVoice$
@@ -121,9 +136,9 @@ const createSpeechCaptureStream = (
       let recordingLength = contextDuration * sampleRate;
 
       action$.filter(ofType("process")).subscribe({
-        next: action => {
+        next: (action) => {
           recordingLength += action.data.length;
-        }
+        },
       });
 
       return isHearingVoice$
@@ -141,17 +156,21 @@ const createSpeechCaptureStream = (
 const createStreamProcessor = (action$: Stream<Action>): Stream<Event> => {
   return action$
     .filter(ofType("start"))
-    .map(action => {
+    .map((action) => {
       const {
         sampleRate,
         silenceDuration,
         amplitudeThreshold,
-        contextDuration
+        contextDuration,
       } = action.data;
-      const isHearingVoice$ = createVoiceDetectorStream(
+      const averageAmplitude$ = createAverageAmplitudeStream(
         action$,
         sampleRate,
-        silenceDuration,
+        silenceDuration
+      );
+      const isHearingVoice$ = createVoiceDetectorStream(
+        action$,
+        averageAmplitude$,
         amplitudeThreshold
       );
       const capturedSentence$ = createSpeechCaptureStream(
@@ -163,8 +182,12 @@ const createStreamProcessor = (action$: Stream<Action>): Stream<Event> => {
 
       return xs
         .merge(
+          averageAmplitude$.map<Event>((data) => ({
+            key: "average_amplitude",
+            data,
+          })),
           isHearingVoice$.filter(is(true)).mapTo<Event>({ key: "voice_start" }),
-          capturedSentence$.map<Event>(data => ({ key: "voice_end", data }))
+          capturedSentence$.map<Event>((data) => ({ key: "voice_end", data }))
         )
         .endWhen(action$.filter(ofType("stop")));
     })
@@ -174,17 +197,17 @@ const createStreamProcessor = (action$: Stream<Action>): Stream<Event> => {
 const ctx: Worker = self as any;
 
 const action$ = xs.create<Action>({
-  start: listener => {
-    ctx.onmessage = e => listener.next(e.data);
+  start: (listener) => {
+    ctx.onmessage = (e) => listener.next(e.data);
   },
   stop: () => {
     ctx.onmessage = null;
-  }
+  },
 });
 
 createStreamProcessor(action$).subscribe({
   next: ctx.postMessage.bind(ctx),
-  error: console.error
+  error: console.error,
 });
 
 export type InputWorkerEvent = Action;
