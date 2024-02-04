@@ -1,32 +1,17 @@
 import { Driver } from "@cycle/run";
 import xs, { Stream } from "xstream";
-import { ofType } from "../utils";
 
-export type AudioSink = Stream<
-  | {
-      key: "start_recording";
-    }
-  | {
-      key: "stop_recording";
-    }
-  | {
-      key: "set_volume";
-      data: number;
-    }
-  | {
-      key: "start_playing";
-      data: Float32Array;
-    }
-  | {
-      key: "stop_playing";
-    }
->;
+export interface AudioSink {
+  setVolume: Stream<number>;
+  startRecording: Stream<void>;
+  stopRecording: Stream<void>;
+  startPlaying: Stream<Float32Array>;
+  stopPlaying: Stream<void>;
+}
 
 export interface AudioSource {
   sampleRate: Stream<number>;
   samples: Stream<Float32Array>;
-  sourceAnalyser: Stream<AnalyserNode>;
-  outputAnalyser: Stream<AnalyserNode>;
 }
 
 export class CancelableMediaSource {
@@ -136,60 +121,48 @@ export class PlaybackSource {
 
 export const makeAudioDriver =
   (createAudioContext: () => AudioContext): Driver<AudioSink, AudioSource> =>
-  (action$) => {
-    const audioCtx$ = action$
-      .filter(ofType("start_recording"))
-      .map(createAudioContext);
+  (sources) => {
+    const audioCtx$ = sources.startPlaying.map(createAudioContext);
     const mediaSource$ = audioCtx$.map(
       (audioCtx) => new CancelableMediaSource(audioCtx)
     );
     const playbackSource$ = audioCtx$.map(
       (audioCtx) => new PlaybackSource(audioCtx)
     );
-    const source$ = xs.combine(mediaSource$, playbackSource$);
 
-    const volume$ = action$
-      .filter(ofType("set_volume"))
-      .map((action) => action.data);
-
-    xs.combine(playbackSource$, volume$).subscribe({
-      next: ([playbackSource, volume]) => {
+    xs.combine(sources.setVolume, playbackSource$).subscribe({
+      next([volume, playbackSource]) {
         playbackSource.setVolume(volume);
       },
     });
 
-    xs.combine(action$, source$)
-      .debug()
-      .subscribe({
-        next: ([action, [mediaSource, playbackSource]]) => {
-          switch (action.key) {
-            case "start_recording":
-              mediaSource.start();
-              break;
+    xs.combine(sources.startRecording, mediaSource$).subscribe({
+      next([_, mediaSource]) {
+        mediaSource.start();
+      },
+    });
 
-            case "stop_recording":
-              mediaSource.stop();
-              playbackSource.stop();
-              break;
+    xs.combine(sources.stopRecording, mediaSource$, playbackSource$).subscribe({
+      next([_, mediaSource, playbackSource]) {
+        mediaSource.stop();
+        playbackSource.stop();
+      },
+    });
 
-            case "start_playing":
-              playbackSource.start(action.data);
-              break;
+    xs.combine(sources.startPlaying, playbackSource$).subscribe({
+      next([buffer, playbackSource]) {
+        playbackSource.start(buffer);
+      },
+    });
 
-            case "stop_playing":
-              playbackSource.stop();
-              break;
-          }
-        },
-        error: console.error,
-      });
+    xs.combine(sources.stopPlaying, playbackSource$).subscribe({
+      next([_, playbackSource]) {
+        playbackSource.stop();
+      },
+    });
 
     return {
       sampleRate: audioCtx$.map((audioCtx) => audioCtx.sampleRate),
       samples: mediaSource$.map((mediaSource) => mediaSource.samples).flatten(),
-      sourceAnalyser: mediaSource$.map((mediaSource) => mediaSource.analyser),
-      outputAnalyser: playbackSource$.map(
-        (playbackSource) => playbackSource.analyser
-      ),
     };
   };
