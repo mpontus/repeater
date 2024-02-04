@@ -8,6 +8,7 @@ export interface Props {
   label: string;
   min: number;
   max: number;
+  progress?: number;
 }
 
 export interface Sources {
@@ -29,17 +30,31 @@ function intent(domSource: DOMSource): Stream<Value> {
 }
 
 function model(newValue$: Stream<Value>, props$: Stream<Props>): Stream<Value> {
-  const initialValue$ = props$.map(props => props.initial).take(1);
+  const initialValue$ = props$.map((props) => props.initial).take(1);
   return xs.merge(initialValue$, newValue$).remember();
 }
 
-function view(props$: Stream<Props>, value$: Stream<Value>) {
-  return xs.combine(props$, value$).map(([props, value]) =>
+function view(props$: Stream<Props>, valueChange$: Stream<Value>) {
+  const value$ = xs.merge(
+    props$.map((props) => props.initial),
+    valueChange$
+  );
+  const progress$ = props$.map((props) =>
+    Math.floor(((props.progress || 0) / props.max) * 100)
+  );
+
+  return xs.combine(props$, value$, progress$).map(([props, value, p]) =>
     div(".labeled-slider", [
       span(".label", props.label),
       input(".slider", {
-        attrs: { type: "range", min: props.min, max: props.max, value }
-      })
+        attrs: {
+          type: "range",
+          min: props.min,
+          max: props.max,
+          value,
+          style: `--p: ${p}%`,
+        },
+      }),
     ])
   );
 }
@@ -51,6 +66,6 @@ export const LabeledSlider = (sources: Sources): Sinks => {
   return {
     DOM: vdom$,
     value: value$,
-    changes: change$
+    changes: change$,
   };
 };

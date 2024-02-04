@@ -10,6 +10,7 @@ import { ToggleButton } from "./ToggleButton";
 export interface Props {
   initialVolume: number;
   initialThreshold: number;
+  loudness: number;
 }
 
 export interface Sources {
@@ -29,8 +30,11 @@ export function Main(sources: Sources): Sinks {
     .events("click")
     .fold((isShown) => !isShown, false);
   const helpShown$ = helpVisible$.filter(is(true)).take(1).startWith(false);
+  const loudness$ = sources.props.map((props) => props.loudness).debug();
   const initialVolume$ = sources.props.map((props) => props.initialVolume);
-  const initialThreshold = sources.props.map((props) => props.initialThreshold);
+  const initialThreshold$ = sources.props.map(
+    (props) => props.initialThreshold
+  );
 
   const VolumeSlider = isolate(LabeledSlider) as typeof LabeledSlider;
   const ThresholdSlider = isolate(LabeledSlider) as typeof LabeledSlider;
@@ -41,12 +45,15 @@ export function Main(sources: Sources): Sinks {
     max: 100,
     initial: value,
   }));
-  const thresholdSliderProps$ = initialThreshold.map((value) => ({
-    label: "Amplitude Threshold",
-    min: 0,
-    max: 100,
-    initial: value,
-  }));
+  const thresholdSliderProps$ = xs
+    .combine(initialThreshold$, loudness$)
+    .map(([value, loudness]) => ({
+      label: "Amplitude Threshold",
+      min: 0,
+      max: 100,
+      initial: value,
+      progress: loudness,
+    }));
   const toggleButtonProps$ = xs.of(false).map((value) => ({
     label: (
       <svg viewBox="0 0 24 24">

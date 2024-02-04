@@ -1,29 +1,20 @@
-export interface IVoiceDetector {
-  write(data: Float32Array): void;
+import { IAverageAmplitude } from "./AverageAmplitude";
 
+export interface IVoiceDetector {
   isHearingVoice(): boolean;
 }
 
-export class AverageAmplitudeVoiceDetector implements IVoiceDetector {
-  private readonly sampleCount: number;
+export class VoiceDetector implements IVoiceDetector {
+  private readonly averageAmplitude: IAverageAmplitude;
   private threshold: number;
 
-  private avg: number = 0;
-
-  constructor(threshold: number, sampleCount: number) {
-    this.sampleCount = sampleCount;
+  constructor(averageAmplitude: IAverageAmplitude, threshold: number) {
+    this.averageAmplitude = averageAmplitude;
     this.threshold = threshold;
   }
 
-  write(data: Float32Array) {
-    const sum = data.map(Math.abs).reduce((a, b) => a + b);
-
-    this.avg *= 1 - data.length / this.sampleCount;
-    this.avg += sum / this.sampleCount;
-  }
-
   isHearingVoice() {
-    return this.avg > this.threshold;
+    return this.averageAmplitude.getAverageAmplitude() > this.threshold;
   }
 
   setThreshold(value: number) {
@@ -31,4 +22,4 @@ export class AverageAmplitudeVoiceDetector implements IVoiceDetector {
   }
 }
 
-export default AverageAmplitudeVoiceDetector;
+export default VoiceDetector;

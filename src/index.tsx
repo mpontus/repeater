@@ -8,7 +8,7 @@ import xs, { Stream } from "xstream";
 import { Main } from "./components/Main";
 import { AudioSink, AudioSource, makeAudioDriver } from "./drivers/audioDriver";
 import { makeWorkerDriver } from "./drivers/workerDriver";
-import { is, ofType } from "./utils";
+import { is, isDefined, ofType } from "./utils";
 import { InputWorkerEvent, OutputWorkerEvent } from "./worker";
 
 export type Sources = {
@@ -31,6 +31,7 @@ export type Sinks = {
  * Exponentiation makes the slider feel more natural.
  */
 const exponentiateThreshold = (v: number) => v ** 2 * 0.2;
+const unexponentiateThreshold = (v: number) => Math.sqrt(v / 0.2);
 
 const main = (sources: Sources): Sinks => {
   const initialVolume$ = sources.storage.local
@@ -41,28 +42,43 @@ const main = (sources: Sources): Sinks => {
     .getItem<string>("threshold")
     .take(1)
     .map((value) => (value ? parseInt(value, 10) : 15));
+  const loudness$ = sources.worker
+    .filter(ofType("average_amplitude"))
+    .map((e) => Math.floor(unexponentiateThreshold(e.data) * 100));
   const main = Main({
     DOM: sources.DOM,
     props: xs
-      .combine(initialVolume$, initialThreshold)
-      .map(([initialVolume, initialThreshold]) => ({
+      .combine(
+        initialVolume$,
+        initialThreshold,
+        xs.merge(
+          loudness$,
+          // Dunno why, but this is necessary to start the stream
+          xs.create({
+            start(listener) {
+              setTimeout(() => listener.next(0));
+            },
+            stop() {},
+          })
+        ) as Stream<number>
+      )
+      .map(([initialVolume, initialThreshold, loudness]) => ({
         initialThreshold,
         initialVolume,
+        loudness,
       })),
   });
 
+  const vdom$ = main.DOM;
   const volume$ = main.volume;
   const threshold$ = main.threshold;
   const started$ = main.started;
 
   // We also need explicit changes (i.e. exlude default values) to
   // invoke driver actions explicitly.
-  const thresholdChange$ = threshold$.drop(1);
-  const startedChange$ = started$.drop(1);
-  const vdom$ = main.DOM;
   const audioSink: AudioSink = xs.merge(
     started$.filter(is(true)).mapTo({ type: "start_recording" }),
-    startedChange$.filter(is(false)).mapTo({ type: "stop_recording" }),
+    started$.drop(1).filter(is(false)).mapTo({ type: "stop_recording" }),
     volume$.map((value) => ({ type: "set_volume", data: value / 100 })),
     sources.worker
       .filter(ofType("voice_end"))
@@ -91,8 +107,8 @@ const main = (sources: Sources): Sinks => {
       )
       .flatten(),
 
-    startedChange$.filter(is(false)).mapTo<InputWorkerEvent>({ key: "stop" }),
-    thresholdChange$.map<InputWorkerEvent>((threshold) => ({
+    started$.drop(1).filter(is(false)).mapTo<InputWorkerEvent>({ key: "stop" }),
+    threshold$.drop(1).map<InputWorkerEvent>((threshold) => ({
       key: "update_settings",
       data: {
         amplitudeThreshold: exponentiateThreshold(threshold / 100),

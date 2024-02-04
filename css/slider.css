@@ -4,6 +4,7 @@
 
   --slider-track-height: 1rem;
   --slider-track-radius: 0.2rem;
+  --slider-track-highlight: #9ac;
   --slider-track-background: rgba(0, 0, 0, 0.12);
   --slider-track-border: none;
   --slider-track-shadow: none;
@@ -27,7 +28,10 @@ input[type=range]::range-track {
   height: var(--slider-track-height);
   border: var(--slider-track-border);
   border-radius: var(--slider-track-radius);
-  background: var(--slider-track-background);
+  background: linear-gradient(90deg, 
+    var(--slider-track-highlight) var(--p, 0%), 
+    var(--slider-track-background) var(--p, 0%)
+  );
   box-shadow: var(--slider-track-shadow);
 }
 
