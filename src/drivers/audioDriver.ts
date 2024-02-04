@@ -1,13 +1,13 @@
 import { Driver } from "@cycle/run";
 import xs, { Stream } from "xstream";
 
-export interface AudioSink {
-  setVolume: Stream<number>;
-  startRecording: Stream<void>;
-  stopRecording: Stream<void>;
-  startPlaying: Stream<Float32Array>;
-  stopPlaying: Stream<void>;
-}
+export type AudioSink = Stream<
+  | { type: "set_volume"; data: number }
+  | { type: "start_recording" }
+  | { type: "stop_recording" }
+  | { type: "start_playing"; data: Float32Array }
+  | { type: "stop_playing" }
+>;
 
 export interface AudioSource {
   sampleRate: Stream<number>;
@@ -114,15 +114,17 @@ export class PlaybackSource {
     }
   }
 
-  setVolume(value: number): void {
+  set_volume(value: number): void {
     this.volumeControlNode.gain.value = value;
   }
 }
 
 export const makeAudioDriver =
   (createAudioContext: () => AudioContext): Driver<AudioSink, AudioSource> =>
-  (sources) => {
-    const audioCtx$ = sources.startPlaying.map(createAudioContext);
+  (source$) => {
+    const audioCtx$ = source$
+      .filter((action) => action.type === "start_recording")
+      .map(createAudioContext);
     const mediaSource$ = audioCtx$.map(
       (audioCtx) => new CancelableMediaSource(audioCtx)
     );
@@ -130,34 +132,25 @@ export const makeAudioDriver =
       (audioCtx) => new PlaybackSource(audioCtx)
     );
 
-    xs.combine(sources.setVolume, playbackSource$).subscribe({
-      next([volume, playbackSource]) {
-        playbackSource.setVolume(volume);
-      },
-    });
-
-    xs.combine(sources.startRecording, mediaSource$).subscribe({
-      next([_, mediaSource]) {
-        mediaSource.start();
-      },
-    });
-
-    xs.combine(sources.stopRecording, mediaSource$, playbackSource$).subscribe({
-      next([_, mediaSource, playbackSource]) {
-        mediaSource.stop();
-        playbackSource.stop();
-      },
-    });
-
-    xs.combine(sources.startPlaying, playbackSource$).subscribe({
-      next([buffer, playbackSource]) {
-        playbackSource.start(buffer);
-      },
-    });
-
-    xs.combine(sources.stopPlaying, playbackSource$).subscribe({
-      next([_, playbackSource]) {
-        playbackSource.stop();
+    xs.combine(source$, mediaSource$, playbackSource$).subscribe({
+      next([action, mediaSource, playbackSource]) {
+        switch (action.type) {
+          case "set_volume":
+            playbackSource.set_volume(action.data);
+            break;
+          case "start_recording":
+            mediaSource.start();
+            break;
+          case "stop_recording":
+            mediaSource.stop();
+            break;
+          case "start_playing":
+            playbackSource.start(action.data);
+            break;
+          case "stop_playing":
+            playbackSource.stop();
+            break;
+        }
       },
     });
 

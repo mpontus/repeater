@@ -60,13 +60,15 @@ const main = (sources: Sources): Sinks => {
   const thresholdChange$ = threshold$.drop(1);
   const startedChange$ = started$.drop(1);
   const vdom$ = main.DOM;
-  const audioSink: AudioSink = {
-    startRecording: started$.filter(is(true)).mapTo(undefined),
-    stopRecording: started$.drop(1).filter(is(false)).mapTo(undefined),
-    setVolume: volume$.map((value) => value / 100),
-    startPlaying: sources.worker.filter(ofType("voice_end")).map((e) => e.data),
-    stopPlaying: sources.worker.filter(ofType("voice_start")).mapTo(undefined),
-  };
+  const audioSink: AudioSink = xs.merge(
+    started$.filter(is(true)).mapTo({ type: "start_recording" }),
+    startedChange$.filter(is(false)).mapTo({ type: "stop_recording" }),
+    volume$.map((value) => ({ type: "set_volume", data: value / 100 })),
+    sources.worker
+      .filter(ofType("voice_end"))
+      .map((e) => ({ type: "start_playing", data: e.data })),
+    sources.worker.filter(ofType("voice_start")).mapTo({ type: "stop_playing" })
+  );
 
   const workerSink: Stream<InputWorkerEvent> = xs.merge(
     started$
@@ -121,14 +123,11 @@ const main = (sources: Sources): Sinks => {
   };
 };
 
-const audio = makeAudioDriver(() => new AudioContext());
-const worker = makeWorkerDriver<InputWorkerEvent, OutputWorkerEvent>(
-  new Worker("./worker/index.ts")
-);
-const DOM = makeDOMDriver("#root");
 run(main, {
-  DOM: DOM,
+  DOM: makeDOMDriver("#root"),
   storage: storageDriver,
-  audio: audio,
-  worker: worker,
+  audio: makeAudioDriver(() => new AudioContext()),
+  worker: makeWorkerDriver<InputWorkerEvent, OutputWorkerEvent>(
+    new Worker("./worker/index.ts")
+  ),
 });
