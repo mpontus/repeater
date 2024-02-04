@@ -1,0 +1,59 @@
+:root {
+  --vertical-space: 2.4rem;
+  --gutter-width: 1.4rem;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+main > header, main > section, main > footer {
+  padding: 0 var(--gutter-width);
+  margin-bottom: var(--vertical-space);
+}
+
+main > footer, main > header {
+  flex: 1;
+}
+
+main > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.8rem var(--gutter-width);
+}
+
+main > footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 0;
+  line-height: 48px;
+}
+
+section.toggle-button {
+  display: flex;
+  justify-content: center;
+}
+
+@media (min-width: 30rem) {
+  #root {
+    display: flex;
+    background: #f0f0f0;
+  }
+
+  main {
+    min-height: auto;
+    margin: auto;
+    border-radius: 6px;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.12);
+    background: #fff;
+    width: 100%;
+    max-width: 30rem;
+  }
+}
+
+
+/*# sourceMappingURL=/layout.20db2a50.css.map */

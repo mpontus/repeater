@@ -1,0 +1,66 @@
+:root {
+  --transition-duration: 1s;
+  --transition-easing: ease-in-out;
+  --arbitrary-height: 1000px;
+}
+
+@-webkit-keyframes appear {
+  0% {
+    max-height: 0;
+  }
+  100% {
+    max-height: var(--arbitrary-height);
+  }
+}
+
+@keyframes appear {
+  0% {
+    max-height: 0;
+  }
+  100% {
+    max-height: var(--arbitrary-height);
+  }
+}
+
+section.help {
+  margin-top: -2em; /* Cancel header margin */
+  overflow: hidden;
+  max-height: var(--arbitrary-height);
+  -webkit-animation: appear var(--transition-duration) var(--transition-easing);
+          animation: appear var(--transition-duration) var(--transition-easing);
+  transition: max-height var(--transition-duration) var(--transition-easing);
+}
+
+section.help-hidden {
+  max-height: 0px;
+}
+
+.help-button {
+  cursor: pointer;
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+}
+
+.help-button svg {
+  fill: rgba(0, 0, 0, 0.54);
+}
+
+.embedded-video {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 */
+  padding-top: 25px;
+  height: 0;
+}
+
+.embedded-video iframe {
+  border: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+
+/*# sourceMappingURL=/help.6b1f9959.css.map */
