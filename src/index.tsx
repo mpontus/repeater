@@ -1,85 +1,93 @@
-import { DOMSource, VNode, makeDOMDriver } from "@cycle/dom";
-import { run } from "@cycle/run";
+import { DOMSource } from "@cycle/dom/src/rxjs";
+import { VNode, makeDOMDriver } from "@cycle/dom";
+import { run } from "@cycle/rxjs-run";
 import storageDriver, {
   ResponseCollection,
   StorageRequest,
 } from "@cycle/storage";
-import xs, { Stream } from "xstream";
+import { Observable, combineLatest, pipe, merge, from } from "rxjs";
+import {
+  map,
+  skip,
+  filter,
+  take,
+  mergeMap,
+  startWith,
+  mapTo,
+} from "rxjs/operators";
 import { Main } from "./components/Main";
 import { AudioSink, AudioSource, makeAudioDriver } from "./drivers/audioDriver";
 import { makeWorkerDriver } from "./drivers/workerDriver";
-import { is, ofType } from "./utils";
+import { is, ofType, toObservable } from "./utils";
 import { InputWorkerEvent, OutputWorkerEvent } from "./worker";
 
 export type Sources = {
   DOM: DOMSource;
   storage: ResponseCollection;
   audio: AudioSource;
-  worker: Stream<OutputWorkerEvent>;
+  worker: Observable<OutputWorkerEvent>;
 };
 
 export type Sinks = {
-  DOM: Stream<VNode>;
-  storage: Stream<StorageRequest>;
+  DOM: Observable<VNode>;
+  storage: Observable<StorageRequest>;
   audio: AudioSink;
-  worker: Stream<InputWorkerEvent>;
+  worker: Observable<InputWorkerEvent>;
 };
 
-/**
- * Adjust threshold value to fit real scale.
- *
- * Exponentiation makes the slider feel more natural.
- */
 const exponentiateThreshold = (v: number) => v ** 2 * 0.2;
 
 const main = (sources: Sources): Sinks => {
-  const initialVolume$ = sources.storage.local
-    .getItem<string>("volume")
-    .take(1)
-    .map((value) => (value ? parseInt(value, 10) : 50));
-  const initialThreshold = sources.storage.local
-    .getItem<string>("threshold")
-    .take(1)
-    .map((value) => (value ? parseInt(value, 10) : 15));
+  const initialVolume$ = toObservable(
+    sources.storage.local.getItem<string>("volume")
+  ).pipe(
+    take(1),
+    map((value) => (value ? parseInt(value, 10) : 50))
+  );
+  const initialThreshold$ = toObservable(
+    sources.storage.local.getItem<string>("threshold")
+  ).pipe(
+    take(1),
+    map((value) => (value ? parseInt(value, 10) : 15))
+  );
   const main = Main({
     DOM: sources.DOM,
-    props: xs
-      .combine(initialVolume$, initialThreshold)
-      .map(([initialVolume, initialThreshold]) => ({
+    props: combineLatest([initialVolume$, initialThreshold$]).pipe(
+      map(([initialVolume, initialThreshold]) => ({
         initialThreshold,
         initialVolume,
-      })),
+      }))
+    ),
   });
 
   const volume$ = main.volume;
   const threshold$ = main.threshold;
   const started$ = main.started;
 
-  // We also need explicit changes (i.e. exlude default values) to
-  // invoke driver actions explicitly.
-  const thresholdChange$ = threshold$.drop(1);
-  const startedChange$ = started$.drop(1);
+  const thresholdChange$ = threshold$.pipe(skip(1));
+  const startedChange$ = started$.pipe(skip(1));
   const vdom$ = main.DOM;
-  const audioSink: AudioSink = xs.merge(
-    started$.filter(is(true)).mapTo({ type: "start_recording" }),
-    startedChange$.filter(is(false)).mapTo({ type: "stop_recording" }),
-    volume$.map((value) => ({ type: "set_volume", data: value / 100 })),
-    sources.worker
-      .filter(ofType("voice_end"))
-      .map((e) => ({ type: "start_playing", data: e.data })),
-    sources.worker.filter(ofType("voice_start")).mapTo({ type: "stop_playing" })
+  const audioSink: AudioSink = merge(
+    started$.pipe(filter(is(true)), mapTo({ type: "start_recording" })),
+    startedChange$.pipe(filter(is(false)), mapTo({ type: "stop_recording" })),
+    volume$.pipe(map((value) => ({ type: "set_volume", data: value / 100 }))),
+    sources.worker.pipe(
+      filter(ofType("voice_end")),
+      map((e) => ({ type: "start_playing", data: e.data }))
+    ),
+    sources.worker.pipe(
+      filter(ofType("voice_start")),
+      mapTo({ type: "stop_playing" })
+    )
   );
 
-  const workerSink: Stream<InputWorkerEvent> = xs.merge(
-    started$
-      .filter(is(true))
-      // Nested stream is necessary in order to pass threshold with
-      // "start", and not emit "start" on every threshold change
-      .map(() =>
-        xs
-          .combine(sources.audio.sampleRate, threshold$)
-          .take(1)
-          .map<InputWorkerEvent>(([sampleRate, threshold]) => ({
+  const workerSink: Observable<InputWorkerEvent> = merge(
+    started$.pipe(
+      filter(is(true)),
+      mergeMap(() =>
+        combineLatest([sources.audio.sampleRate, threshold$]).pipe(
+          take(1),
+          map<InputWorkerEvent>(([sampleRate, threshold]) => ({
             key: "start",
             data: {
               sampleRate,
@@ -88,31 +96,42 @@ const main = (sources: Sources): Sinks => {
               contextDuration: 0.5,
             },
           }))
+        )
       )
-      .flatten(),
-
-    startedChange$.filter(is(false)).mapTo<InputWorkerEvent>({ key: "stop" }),
-    thresholdChange$.map<InputWorkerEvent>((threshold) => ({
-      key: "update_settings",
-      data: {
-        amplitudeThreshold: exponentiateThreshold(threshold / 100),
-      },
-    })),
-    sources.audio.samples.map<InputWorkerEvent>((data) => ({
-      key: "process",
-      data,
-    }))
+    ),
+    startedChange$.pipe(
+      filter(is(false)),
+      mapTo<InputWorkerEvent>({ key: "stop" })
+    ),
+    thresholdChange$.pipe(
+      map<InputWorkerEvent>((threshold) => ({
+        key: "update_settings",
+        data: {
+          amplitudeThreshold: exponentiateThreshold(threshold / 100),
+        },
+      }))
+    ),
+    sources.audio.samples.pipe(
+      map<InputWorkerEvent>((data) => ({
+        key: "process",
+        data,
+      }))
+    )
   );
 
-  const storageSink = xs.merge(
-    volume$.map((value) => ({
-      key: "volume",
-      value,
-    })),
-    threshold$.map((value) => ({
-      key: "threshold",
-      value,
-    }))
+  const storageSink = merge(
+    volume$.pipe(
+      map((value) => ({
+        key: "volume",
+        value,
+      }))
+    ),
+    threshold$.pipe(
+      map((value) => ({
+        key: "threshold",
+        value,
+      }))
+    )
   );
 
   return {

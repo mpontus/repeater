@@ -1,11 +1,11 @@
 import * as Snabbdom from "snabbdom-pragma";
 
-import { DOMSource, MainDOMSource, VNode } from "@cycle/dom";
-import isolate from "@cycle/isolate";
-import xs, { Stream } from "xstream";
-import { is } from "../utils";
+import { DOMSource } from "@cycle/dom/src/rxjs";
+import { Observable, combineLatest, of } from "rxjs";
+import { map, startWith, scan, pluck, filter, take } from "rxjs/operators";
 import { LabeledSlider } from "./LabeledSlider";
 import { ToggleButton } from "./ToggleButton";
+import { VNode } from "@cycle/dom";
 
 export interface Props {
   initialVolume: number;
@@ -14,54 +14,62 @@ export interface Props {
 
 export interface Sources {
   DOM: DOMSource;
-  props: Stream<Props>;
+  props: Observable<Props>;
 }
 
 export interface Sinks {
-  DOM: Stream<VNode>;
-  volume: Stream<number>;
-  threshold: Stream<number>;
-  started: Stream<boolean>;
+  DOM: Observable<VNode>;
+  volume: Observable<number>;
+  threshold: Observable<number>;
+  started: Observable<boolean>;
 }
 
 export function Main(sources: Sources): Sinks {
-  const helpVisible$ = (sources.DOM.select(".help-button") as MainDOMSource)
+  const helpVisible$ = sources.DOM.select(".help-button")
     .events("click")
-    .fold((isShown) => !isShown, false);
-  const helpShown$ = helpVisible$.filter(is(true)).take(1).startWith(false);
-  const initialVolume$ = sources.props.map((props) => props.initialVolume);
-  const initialThreshold = sources.props.map((props) => props.initialThreshold);
+    .pipe(
+      scan((isShown) => !isShown, false),
+      startWith(false)
+    );
+  const helpShown$ = helpVisible$.pipe(
+    filter((value) => value === true),
+    take(1),
+    startWith(false)
+  );
 
-  const VolumeSlider = isolate(LabeledSlider) as typeof LabeledSlider;
-  const ThresholdSlider = isolate(LabeledSlider) as typeof LabeledSlider;
+  const initialVolume$ = sources.props.pipe(pluck("initialVolume"));
+  const initialThreshold$ = sources.props.pipe(pluck("initialThreshold"));
 
-  const volumeSliderProps$ = initialVolume$.map((value) => ({
-    label: "Feedback Volume",
-    min: 0,
-    max: 100,
-    initial: value,
-  }));
-  const thresholdSliderProps$ = initialThreshold.map((value) => ({
-    label: "Amplitude Threshold",
-    min: 0,
-    max: 100,
-    initial: value,
-  }));
-  const toggleButtonProps$ = xs.of(false).map((value) => ({
-    label: (
-      <svg viewBox="0 0 24 24">
-        <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" />
-        <path d="M0 0h24v24H0z" fill="none" />
-      </svg>
-    ),
-    initial: value,
-  }));
+  const volumeSliderProps$ = initialVolume$.pipe(
+    map((value) => ({
+      label: "Feedback Volume",
+      min: 0,
+      max: 100,
+      initial: value,
+    }))
+  );
 
-  const volumeSlider = VolumeSlider({
+  const thresholdSliderProps$ = initialThreshold$.pipe(
+    map((value) => ({
+      label: "Amplitude Threshold",
+      min: 0,
+      max: 100,
+      initial: value,
+    }))
+  );
+
+  const toggleButtonProps$ = of(false).pipe(
+    map((value) => ({
+      label: "Start",
+      initial: value,
+    }))
+  );
+
+  const volumeSlider = LabeledSlider({
     DOM: sources.DOM,
     props$: volumeSliderProps$,
   });
-  const thresholdSlider = ThresholdSlider({
+  const thresholdSlider = LabeledSlider({
     DOM: sources.DOM,
     props$: thresholdSliderProps$,
   });
@@ -70,15 +78,14 @@ export function Main(sources: Sources): Sinks {
     props$: toggleButtonProps$,
   });
 
-  const vdom$ = xs
-    .combine(
-      helpShown$,
-      helpVisible$,
-      volumeSlider.DOM,
-      thresholdSlider.DOM,
-      toggleButton.DOM
-    )
-    .map(
+  const vdom$ = combineLatest([
+    helpShown$,
+    helpVisible$,
+    volumeSlider.DOM,
+    thresholdSlider.DOM,
+    toggleButton.DOM,
+  ]).pipe(
+    map(
       ([
         helpShown,
         helpVisible,
@@ -147,7 +154,8 @@ export function Main(sources: Sources): Sinks {
           </footer>
         </main>
       )
-    );
+    )
+  );
 
   return {
     DOM: vdom$,

@@ -1532,6 +1532,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@cycle/rxjs-run@npm:^10.5.0":
+  version: 10.5.0
+  resolution: "@cycle/rxjs-run@npm:10.5.0"
+  peerDependencies:
+    "@cycle/run": ^5.2.0
+    rxjs: 6.x
+    symbol-observable: ^1.2.0
+    xstream: "*"
+  checksum: 10c0/c0871a3130ac14156aee52e3f6d46979b671fd7ead6b0bf2ef2931af817d680927e5f840cda8d45b55521d4e732919df86f022689d0d9cbcfff8b26a86a6813c
+  languageName: node
+  linkType: hard
+
 "@cycle/storage@npm:^5.1.2":
   version: 5.1.2
   resolution: "@cycle/storage@npm:5.1.2"
@@ -10210,6 +10222,7 @@ __metadata:
     "@cycle/dom": "npm:^23.1.0"
     "@cycle/isolate": "npm:^5.2.0"
     "@cycle/run": "npm:^5.7.0"
+    "@cycle/rxjs-run": "npm:^10.5.0"
     "@cycle/storage": "npm:^5.1.2"
     "@types/jest": "npm:^23.3.1"
     autoprefixer: "npm:^9.2.0"
@@ -10221,6 +10234,7 @@ __metadata:
     postcss: "npm:^7.0.5"
     postcss-css-variables: "npm:^0.11.0"
     postcss-input-range: "npm:^4.0.0"
+    rxjs: "npm:6"
     snabbdom-pragma: "npm:^2.7.0"
     src: "npm:^1.1.2"
     ts-jest: "npm:^23.1.4"
@@ -10485,6 +10499,15 @@ __metadata:
   version: 3.6.2
   resolution: "rsvp@npm:3.6.2"
   checksum: 10c0/258c75eff146821f9c1d438535ed1a95384e4de12dc681647b0fcf9dee594cbb40eb43279ce4eee733fa440bc6a21177042ea137d80dcb386443b35dd904f161
+  languageName: node
+  linkType: hard
+
+"rxjs@npm:6":
+  version: 6.6.7
+  resolution: "rxjs@npm:6.6.7"
+  dependencies:
+    tslib: "npm:^1.9.0"
+  checksum: 10c0/e556a13a9aa89395e5c9d825eabcfa325568d9c9990af720f3f29f04a888a3b854f25845c2b55875d875381abcae2d8100af9cacdc57576e7ed6be030a01d2fe
   languageName: node
   linkType: hard
 
@@ -11715,6 +11738,13 @@ __metadata:
     jest: ^23.0.0 || ^24.0.0
     typescript: ^2.0.0 || ^3.0.0
   checksum: 10c0/fbe39af44d2c52692a95e9ff555325994d1dd88521beb7cf67c5730b836d4f93270a1ef722bfb17145ba75bd15c665d3a906669689b6348cae332d4a7d422df1
+  languageName: node
+  linkType: hard
+
+"tslib@npm:^1.9.0":
+  version: 1.14.1
+  resolution: "tslib@npm:1.14.1"
+  checksum: 10c0/69ae09c49eea644bc5ebe1bca4fa4cc2c82b7b3e02f43b84bd891504edf66dbc6b2ec0eef31a957042de2269139e4acff911e6d186a258fb14069cd7f6febce2
   languageName: node
   linkType: hard
 

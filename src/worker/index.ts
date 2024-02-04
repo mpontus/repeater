@@ -84,15 +84,15 @@ const createVoiceDetectorStream = (
   );
 
   action$.filter(ofType("process")).subscribe({
-    next: action => voiceDetector.write(action.data)
+    next: (action) => voiceDetector.write(action.data),
   });
 
   action$.filter(ofType("update_settings")).subscribe({
-    next: action => {
+    next: (action) => {
       if (action.data.amplitudeThreshold) {
         voiceDetector.setThreshold(action.data.amplitudeThreshold);
       }
-    }
+    },
   });
 
   return action$
@@ -112,7 +112,7 @@ const createSpeechCaptureStream = (
   const buffer = new CircularBuffer(BUFFER_SIZE);
 
   action$.filter(ofType("process")).subscribe({
-    next: action => buffer.write(action.data)
+    next: (action) => buffer.write(action.data),
   });
 
   return isHearingVoice$
@@ -121,9 +121,9 @@ const createSpeechCaptureStream = (
       let recordingLength = contextDuration * sampleRate;
 
       action$.filter(ofType("process")).subscribe({
-        next: action => {
+        next: (action) => {
           recordingLength += action.data.length;
-        }
+        },
       });
 
       return isHearingVoice$
@@ -141,12 +141,12 @@ const createSpeechCaptureStream = (
 const createStreamProcessor = (action$: Stream<Action>): Stream<Event> => {
   return action$
     .filter(ofType("start"))
-    .map(action => {
+    .map((action) => {
       const {
         sampleRate,
         silenceDuration,
         amplitudeThreshold,
-        contextDuration
+        contextDuration,
       } = action.data;
       const isHearingVoice$ = createVoiceDetectorStream(
         action$,
@@ -164,7 +164,7 @@ const createStreamProcessor = (action$: Stream<Action>): Stream<Event> => {
       return xs
         .merge(
           isHearingVoice$.filter(is(true)).mapTo<Event>({ key: "voice_start" }),
-          capturedSentence$.map<Event>(data => ({ key: "voice_end", data }))
+          capturedSentence$.map<Event>((data) => ({ key: "voice_end", data }))
         )
         .endWhen(action$.filter(ofType("stop")));
     })
@@ -174,17 +174,17 @@ const createStreamProcessor = (action$: Stream<Action>): Stream<Event> => {
 const ctx: Worker = self as any;
 
 const action$ = xs.create<Action>({
-  start: listener => {
-    ctx.onmessage = e => listener.next(e.data);
+  start: (listener) => {
+    ctx.onmessage = (e) => listener.next(e.data);
   },
   stop: () => {
     ctx.onmessage = null;
-  }
+  },
 });
 
 createStreamProcessor(action$).subscribe({
   next: ctx.postMessage.bind(ctx),
-  error: console.error
+  error: console.error,
 });
 
 export type InputWorkerEvent = Action;

@@ -1,5 +1,7 @@
-import xs, { Stream } from "xstream";
-import { div, span, input, DOMSource, VNode } from "@cycle/dom";
+import { Observable, merge, combineLatest } from "rxjs";
+import { map, take } from "rxjs/operators";
+import { DOMSource } from "@cycle/dom/src/rxjs";
+import { div, span, input, VNode } from "@cycle/dom";
 
 export type Value = number;
 
@@ -12,35 +14,43 @@ export interface Props {
 
 export interface Sources {
   DOM: DOMSource;
-  props$: Stream<Props>;
+  props$: Observable<Props>;
 }
 
 export interface Sinks {
-  DOM: Stream<VNode>;
-  value: Stream<Value>;
-  changes: Stream<Value>;
+  DOM: Observable<VNode>;
+  value: Observable<Value>;
+  changes: Observable<Value>;
 }
 
-function intent(domSource: DOMSource): Stream<Value> {
+function intent(domSource: DOMSource): Observable<Value> {
   return domSource
     .select(".slider")
     .events("input")
-    .map((ev: any) => ev.target.value);
+    .pipe(map((ev: any) => ev.target.value));
 }
 
-function model(newValue$: Stream<Value>, props$: Stream<Props>): Stream<Value> {
-  const initialValue$ = props$.map(props => props.initial).take(1);
-  return xs.merge(initialValue$, newValue$).remember();
+function model(
+  newValue$: Observable<Value>,
+  props$: Observable<Props>
+): Observable<Value> {
+  const initialValue$ = props$.pipe(
+    map((props) => props.initial),
+    take(1)
+  );
+  return merge(initialValue$, newValue$);
 }
 
-function view(props$: Stream<Props>, value$: Stream<Value>) {
-  return xs.combine(props$, value$).map(([props, value]) =>
-    div(".labeled-slider", [
-      span(".label", props.label),
-      input(".slider", {
-        attrs: { type: "range", min: props.min, max: props.max, value }
-      })
-    ])
+function view(props$: Observable<Props>, value$: Observable<Value>) {
+  return combineLatest(props$, value$).pipe(
+    map(([props, value]) =>
+      div(".labeled-slider", [
+        span(".label", props.label),
+        input(".slider", {
+          attrs: { type: "range", min: props.min, max: props.max, value },
+        }),
+      ])
+    )
   );
 }
 
@@ -51,6 +61,6 @@ export const LabeledSlider = (sources: Sources): Sinks => {
   return {
     DOM: vdom$,
     value: value$,
-    changes: change$
+    changes: change$,
   };
 };

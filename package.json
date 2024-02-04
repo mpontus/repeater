@@ -39,11 +39,13 @@
     "@cycle/dom": "^23.1.0",
     "@cycle/isolate": "^5.2.0",
     "@cycle/run": "^5.7.0",
+    "@cycle/rxjs-run": "^10.5.0",
     "@cycle/storage": "^5.1.2",
     "autoprefixer": "^9.2.0",
     "normalize.css": "^8.0.0",
     "postcss": "^7.0.5",
     "postcss-input-range": "^4.0.0",
+    "rxjs": "6",
     "snabbdom-pragma": "^2.7.0",
     "src": "^1.1.2",
     "xstream": "^11.14.0"
