@@ -29,72 +29,32 @@ export interface AudioSource {
   outputAnalyser: Stream<AnalyserNode>;
 }
 
-interface UserMediaSource {
-  start(): void;
-  stop(): void;
-  samples: Stream<Float32Array>;
-  analyser: AnalyserNode;
-}
+export class CancelableMediaSource {
+  private readonly analyserNode: AnalyserNode;
+  private readonly scriptProcessorNode: ScriptProcessorNode;
+  private readonly muteNode: GainNode;
+  private mediaStreamPromise: Promise<MediaStream>;
+  private canceled: boolean = false;
 
-interface PlaybackSource {
-  start(samples: Float32Array): void;
-  stop(): void;
-  setVolume(value: number): void;
-  analyser: AnalyserNode;
-}
+  public readonly samples: Stream<Float32Array>;
 
-const createCancellableMediaStream = (
-  cb: (stream: MediaStream) => void
-): Function => {
-  const mediaStreamPromise = navigator.mediaDevices.getUserMedia({
-    audio: true
-  });
-  let cancelled = false;
+  get analyser(): AnalyserNode {
+    return this.analyserNode;
+  }
 
-  mediaStreamPromise.then(stream => {
-    if (!cancelled) {
-      cb(stream);
-    }
-  });
+  constructor(private readonly audioCtx: AudioContext) {
+    this.analyserNode = audioCtx.createAnalyser();
+    this.scriptProcessorNode = audioCtx.createScriptProcessor(4096, 1, 1);
+    this.muteNode = audioCtx.createGain();
 
-  return () => {
-    cancelled = true;
+    this.analyserNode.connect(this.scriptProcessorNode);
+    this.scriptProcessorNode.connect(this.muteNode);
+    this.muteNode.connect(audioCtx.destination);
+    this.muteNode.gain.value = 0;
 
-    mediaStreamPromise.then(stream =>
-      stream.getTracks().forEach(track => track.stop())
-    );
-  };
-};
-
-function createUserMediaSource(audioCtx: AudioContext): UserMediaSource {
-  const analyserNode = audioCtx.createAnalyser();
-  const scriptProcessorNode = audioCtx.createScriptProcessor(4096, 1, 1);
-  const muteNode = audioCtx.createGain();
-  let cancel: Function | null = null;
-
-  analyserNode.connect(scriptProcessorNode);
-  scriptProcessorNode.connect(muteNode);
-  muteNode.connect(audioCtx.destination);
-  muteNode.gain.value = 0;
-
-  return {
-    start: () => {
-      cancel = createCancellableMediaStream(stream => {
-        const source = audioCtx.createMediaStreamSource(stream);
-
-        source.connect(analyserNode);
-      });
-    },
-    stop: () => {
-      if (cancel !== null) {
-        cancel();
-      }
-
-      cancel = null;
-    },
-    samples: xs.create({
-      start: listener => {
-        scriptProcessorNode.onaudioprocess = (e: AudioProcessingEvent) => {
+    this.samples = xs.create({
+      start: (listener) => {
+        this.scriptProcessorNode.onaudioprocess = (e: AudioProcessingEvent) => {
           const { inputBuffer } = e;
           const data = inputBuffer.getChannelData(0);
 
@@ -102,97 +62,134 @@ function createUserMediaSource(audioCtx: AudioContext): UserMediaSource {
         };
       },
       stop: () => {
-        scriptProcessorNode.onaudioprocess = () => {};
+        this.scriptProcessorNode.onaudioprocess = () => {};
+      },
+    });
+  }
+
+  start(): void {
+    this.mediaStreamPromise = navigator.mediaDevices.getUserMedia({
+      audio: true,
+    });
+    this.mediaStreamPromise.then((stream) => {
+      if (!this.canceled) {
+        const source = this.audioCtx.createMediaStreamSource(stream);
+
+        source.connect(this.analyserNode);
       }
-    }),
-    analyser: analyserNode
-  };
-}
+    });
+  }
 
-function createPlaybackSource(audioCtx: AudioContext): PlaybackSource {
-  const analyserNode = audioCtx.createAnalyser();
-  const volumeControlNode = audioCtx.createGain();
-  let bufferSource: AudioBufferSourceNode | null = null;
-
-  analyserNode.connect(volumeControlNode);
-  volumeControlNode.connect(audioCtx.destination);
-
-  return {
-    start: (buffer: Float32Array) => {
-      const audioBuffer = audioCtx.createBuffer(
-        1,
-        buffer.length,
-        audioCtx.sampleRate
-      );
-      audioBuffer.copyToChannel(buffer, 0, 0);
-
-      bufferSource = audioCtx.createBufferSource();
-      bufferSource.buffer = audioBuffer;
-      bufferSource.connect(analyserNode);
-      bufferSource.start();
-    },
-    stop: () => {
-      if (bufferSource != null) {
-        bufferSource.stop();
-      }
-    },
-    setVolume: (value: number) => {
-      volumeControlNode.gain.value = value;
-    },
-    analyser: analyserNode
-  };
-}
-
-export const makeAudioDriver = (
-  createAudioContext: () => AudioContext
-): Driver<AudioSink, AudioSource> => action$ => {
-  const audioCtx$ = action$
-    .filter(ofType("start_recording"))
-    .map(createAudioContext);
-  const mediaSource$ = audioCtx$.map(createUserMediaSource);
-  const playbackSource$ = audioCtx$.map(createPlaybackSource);
-  const source$ = xs.combine(mediaSource$, playbackSource$);
-
-  const volume$ = action$
-    .filter(ofType("set_volume"))
-    .map(action => action.data);
-
-  xs.combine(playbackSource$, volume$).subscribe({
-    next: ([playbackSource, volume]) => {
-      playbackSource.setVolume(volume);
+  stop(): void {
+    if (this.canceled) {
+      return;
     }
-  });
 
-  xs.combine(action$, source$).subscribe({
-    next: ([action, [mediaSource, playbackSource]]) => {
-      switch (action.key) {
-        case "start_recording":
-          mediaSource.start();
-          break;
+    this.canceled = true;
+    this.mediaStreamPromise.then((stream) =>
+      stream.getTracks().forEach((track) => track.stop())
+    );
+  }
+}
 
-        case "stop_recording":
-          mediaSource.stop();
-          playbackSource.stop();
-          break;
+export class PlaybackSource {
+  private readonly analyserNode: AnalyserNode;
+  private readonly volumeControlNode: GainNode;
+  private bufferSource: AudioBufferSourceNode | null = null;
 
-        case "start_playing":
-          playbackSource.start(action.data);
-          break;
+  get analyser(): AnalyserNode {
+    return this.analyserNode;
+  }
 
-        case "stop_playing":
-          playbackSource.stop();
-          break;
-      }
-    },
-    error: console.error
-  });
+  constructor(private readonly audioCtx: AudioContext) {
+    this.analyserNode = audioCtx.createAnalyser();
+    this.volumeControlNode = audioCtx.createGain();
 
-  return {
-    sampleRate: audioCtx$.map(audioCtx => audioCtx.sampleRate),
-    samples: mediaSource$.map(mediaSource => mediaSource.samples).flatten(),
-    sourceAnalyser: mediaSource$.map(mediaSource => mediaSource.analyser),
-    outputAnalyser: playbackSource$.map(
-      playbackSource => playbackSource.analyser
-    )
+    this.analyserNode.connect(this.volumeControlNode);
+    this.volumeControlNode.connect(audioCtx.destination);
+  }
+
+  start(buffer: Float32Array): void {
+    const audioBuffer = this.audioCtx.createBuffer(
+      1,
+      buffer.length,
+      this.audioCtx.sampleRate
+    );
+    audioBuffer.copyToChannel(buffer, 0, 0);
+
+    this.bufferSource = this.audioCtx.createBufferSource();
+    this.bufferSource.buffer = audioBuffer;
+    this.bufferSource.connect(this.analyserNode);
+    this.bufferSource.start();
+  }
+
+  stop(): void {
+    if (this.bufferSource != null) {
+      this.bufferSource.stop();
+    }
+  }
+
+  setVolume(value: number): void {
+    this.volumeControlNode.gain.value = value;
+  }
+}
+
+export const makeAudioDriver =
+  (createAudioContext: () => AudioContext): Driver<AudioSink, AudioSource> =>
+  (action$) => {
+    const audioCtx$ = action$
+      .filter(ofType("start_recording"))
+      .map(createAudioContext);
+    const mediaSource$ = audioCtx$.map(
+      (audioCtx) => new CancelableMediaSource(audioCtx)
+    );
+    const playbackSource$ = audioCtx$.map(
+      (audioCtx) => new PlaybackSource(audioCtx)
+    );
+    const source$ = xs.combine(mediaSource$, playbackSource$);
+
+    const volume$ = action$
+      .filter(ofType("set_volume"))
+      .map((action) => action.data);
+
+    xs.combine(playbackSource$, volume$).subscribe({
+      next: ([playbackSource, volume]) => {
+        playbackSource.setVolume(volume);
+      },
+    });
+
+    xs.combine(action$, source$)
+      .debug()
+      .subscribe({
+        next: ([action, [mediaSource, playbackSource]]) => {
+          switch (action.key) {
+            case "start_recording":
+              mediaSource.start();
+              break;
+
+            case "stop_recording":
+              mediaSource.stop();
+              playbackSource.stop();
+              break;
+
+            case "start_playing":
+              playbackSource.start(action.data);
+              break;
+
+            case "stop_playing":
+              playbackSource.stop();
+              break;
+          }
+        },
+        error: console.error,
+      });
+
+    return {
+      sampleRate: audioCtx$.map((audioCtx) => audioCtx.sampleRate),
+      samples: mediaSource$.map((mediaSource) => mediaSource.samples).flatten(),
+      sourceAnalyser: mediaSource$.map((mediaSource) => mediaSource.analyser),
+      outputAnalyser: playbackSource$.map(
+        (playbackSource) => playbackSource.analyser
+      ),
+    };
   };
-};
