@@ -8,6 +8,7 @@ export interface Props {
   label: string;
   min: number;
   max: number;
+  progress?: number;
 }
 
 export interface Sources {
@@ -38,12 +39,21 @@ function view(props$: Stream<Props>, valueChange$: Stream<Value>) {
     props$.map((props) => props.initial),
     valueChange$
   );
+  const progress$ = props$.map((props) =>
+    Math.floor(((props.progress || 0) / props.max) * 100)
+  );
 
-  return xs.combine(props$, value$).map(([props, value]) =>
+  return xs.combine(props$, value$, progress$).map(([props, value, p]) =>
     div(".labeled-slider", [
       span(".label", props.label),
       input(".slider", {
-        attrs: { type: "range", min: props.min, max: props.max, value },
+        attrs: {
+          type: "range",
+          min: props.min,
+          max: props.max,
+          value,
+          style: `--p: ${p}%`,
+        },
       }),
     ])
   );
